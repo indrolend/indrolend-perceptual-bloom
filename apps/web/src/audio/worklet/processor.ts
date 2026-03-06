@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * AudioWorklet processor — Perceptual Bloom
  *
@@ -11,15 +10,56 @@
  *   { type: "params", payload: Partial<BloomParams> }
  */
 
+// AudioWorkletGlobalScope exposes `sampleRate`, `registerProcessor`, and
+// `AudioWorkletProcessor` as globals not present in TypeScript's lib.dom.d.ts.
+// We declare the minimal shapes we need so the rest of the file is type-safe.
+declare const sampleRate: number;
+
+interface AudioWorkletProcessorBase {
+  readonly port: MessagePort;
+  process(
+    inputs: Float32Array[][],
+    outputs: Float32Array[][],
+    parameters: Record<string, Float32Array>
+  ): boolean;
+}
+
+declare abstract class AudioWorkletProcessor implements AudioWorkletProcessorBase {
+  readonly port: MessagePort;
+  abstract process(
+    inputs: Float32Array[][],
+    outputs: Float32Array[][],
+    parameters: Record<string, Float32Array>
+  ): boolean;
+}
+
+declare function registerProcessor(
+  name: string,
+  processor: new () => AudioWorkletProcessorBase
+): void;
+
+// ---------------------------------------------------------------------------
+// Parameter type (mirrors BloomParams in packages/dsp-core)
+// ---------------------------------------------------------------------------
+
+interface BloomParams {
+  punch: number;
+  bloom: number;
+  bassMonoHz: number;
+  tailPan: number;
+  tailSkew: number;
+  outputTrimDb: number;
+}
+
 // ---------------------------------------------------------------------------
 // Inlined dsp-core/ms.ts
 // ---------------------------------------------------------------------------
 
-function msEncode(L, R) {
+function msEncode(L: number, R: number): { mid: number; side: number } {
   return { mid: (L + R) * 0.5, side: (L - R) * 0.5 };
 }
 
-function msDecode(mid, side) {
+function msDecode(mid: number, side: number): { L: number; R: number } {
   return { L: mid + side, R: mid - side };
 }
 
@@ -27,15 +67,15 @@ function msDecode(mid, side) {
 // Inlined dsp-core/perceptualBloom.ts  (coefficient helpers)
 // ---------------------------------------------------------------------------
 
-function timeConstCoeff(timeMs, sampleRate) {
-  return Math.exp(-1.0 / (timeMs * 0.001 * sampleRate));
+function timeConstCoeff(timeMs: number, sr: number): number {
+  return Math.exp(-1.0 / (timeMs * 0.001 * sr));
 }
 
-function lpCoeff(cutoffHz, sampleRate) {
-  return Math.exp((-2.0 * Math.PI * cutoffHz) / sampleRate);
+function lpCoeff(cutoffHz: number, sr: number): number {
+  return Math.exp((-2.0 * Math.PI * cutoffHz) / sr);
 }
 
-function dbToLinear(db) {
+function dbToLinear(db: number): number {
   return Math.pow(10.0, db / 20.0);
 }
 
@@ -43,7 +83,7 @@ function dbToLinear(db) {
 // Default parameters
 // ---------------------------------------------------------------------------
 
-const DEFAULT_PARAMS = {
+const DEFAULT_PARAMS: BloomParams = {
   punch: 0.7,
   bloom: 0.6,
   bassMonoHz: 200,
@@ -57,44 +97,45 @@ const DEFAULT_PARAMS = {
 // ---------------------------------------------------------------------------
 
 class PerceptualBloomProcessor extends AudioWorkletProcessor {
+  private _params: BloomParams;
+  private _envelope: number;
+  private _prevEnvelope: number;
+  private _bassLowpassZ: number;
+  private _needsCoeffUpdate: boolean;
+  private _attackCoeff: number;
+  private _releaseCoeff: number;
+  private _bassCoeff: number;
+  private _bypass: boolean;
+
   constructor() {
     super();
 
-    // Parameter state
     this._params = { ...DEFAULT_PARAMS };
-
-    // DSP state
     this._envelope = 0;
     this._prevEnvelope = 0;
     this._bassLowpassZ = 0;
-
-    // Coefficients (computed lazily on first process call or param change)
     this._needsCoeffUpdate = true;
     this._attackCoeff = 0;
     this._releaseCoeff = 0;
     this._bassCoeff = 0;
-
-    // A/B bypass flag
     this._bypass = false;
 
     // Listen for parameter updates from the main thread
-    this.port.onmessage = (event) => {
-      const msg = event.data;
-      if (msg.type === "params") {
+    this.port.onmessage = (event: MessageEvent) => {
+      const msg = event.data as { type: string; payload?: Partial<BloomParams>; value?: boolean };
+      if (msg.type === "params" && msg.payload) {
         const prev = this._params;
         this._params = { ...prev, ...msg.payload };
-        if (
-          this._params.bassMonoHz !== prev.bassMonoHz
-        ) {
+        if (this._params.bassMonoHz !== prev.bassMonoHz) {
           this._needsCoeffUpdate = true;
         }
       } else if (msg.type === "bypass") {
-        this._bypass = msg.value;
+        this._bypass = msg.value ?? false;
       }
     };
   }
 
-  _updateCoeffs() {
+  private _updateCoeffs(): void {
     this._attackCoeff = timeConstCoeff(2, sampleRate);    // ~2 ms
     this._releaseCoeff = timeConstCoeff(80, sampleRate);  // ~80 ms
     this._bassCoeff = lpCoeff(this._params.bassMonoHz, sampleRate);
@@ -104,7 +145,7 @@ class PerceptualBloomProcessor extends AudioWorkletProcessor {
   /**
    * process() — called by the browser every ~128 samples (one render quantum).
    */
-  process(inputs, outputs) {
+  process(inputs: Float32Array[][], outputs: Float32Array[][]): boolean {
     const input = inputs[0];
     const output = outputs[0];
 
