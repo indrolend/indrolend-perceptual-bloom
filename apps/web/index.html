@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Perceptual Bloom — Audio DSP Demo</title>
+    <link rel="stylesheet" href="/src/style.css" />
+  </head>
+  <body>
+    <div id="app">
+      <header>
+        <h1>Perceptual Bloom</h1>
+        <p class="subtitle">Real-time stereo DSP: punch + bloom + tail shaping</p>
+      </header>
+
+      <!-- ── File loader ───────────────────────────────────────────── -->
+      <section class="card" id="section-file">
+        <h2>Audio File</h2>
+        <label class="file-label" for="file-input">Choose audio file…</label>
+        <input type="file" id="file-input" accept="audio/*" />
+        <p id="file-name" class="file-name">(no file loaded)</p>
+      </section>
+
+      <!-- ── Transport ─────────────────────────────────────────────── -->
+      <section class="card" id="section-transport">
+        <h2>Transport</h2>
+        <div class="transport-row">
+          <button id="btn-play" disabled>▶ Play</button>
+          <button id="btn-stop" disabled>■ Stop</button>
+          <label class="toggle-label">
+            <input type="checkbox" id="chk-loop" />
+            Loop
+          </label>
+          <label class="toggle-label ab-toggle">
+            <input type="checkbox" id="chk-bypass" />
+            A/B Bypass
+          </label>
+        </div>
+      </section>
+
+      <!-- ── DSP Parameters ────────────────────────────────────────── -->
+      <section class="card" id="section-params">
+        <h2>DSP Parameters</h2>
+        <div id="controls-container"></div>
+      </section>
+
+      <!-- ── Status ────────────────────────────────────────────────── -->
+      <footer>
+        <p id="status">Ready — load a file to begin.</p>
+      </footer>
+    </div>
+
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>
