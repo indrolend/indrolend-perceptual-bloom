@@ -240,7 +240,9 @@ class PerceptualBloomProcessor extends AudioWorkletProcessor {
     this._srateHoldR = 0;
     this._srateCounter = 0;
 
-    // Reverb — Freeverb delay lengths scaled to current sampleRate
+    // Reverb — Freeverb delay lengths scaled to current sampleRate.
+    // Base values (at 44 100 Hz) are classic Freeverb comb-filter lengths;
+    // +23 per channel provides the stereo decorrelation spread.
     const s44 = sampleRate / 44100;
     const combLenL = [1116, 1188, 1277, 1356].map(d => Math.max(8, Math.round(d * s44)));
     const combLenR = combLenL.map(d => d + Math.round(23 * s44));
@@ -319,6 +321,8 @@ class PerceptualBloomProcessor extends AudioWorkletProcessor {
 
     const echoLen          = this._echoL.length;
     const echoDelaySamples = Math.min(echoLen - 1, Math.round(p.echoDelayMs * 0.001 * sampleRate));
+    // Echo feedback: dividing by 9 maps the 0–8 integer range to 0–0.9,
+    // giving no feedback at 0 (single echo) and a long, dense tail at 8.
     const echoFeedback     = (p.echoRepeats / 9) * 0.9;
 
     const srateDiv = Math.max(1, Math.round(p.srateDivide));
@@ -327,6 +331,8 @@ class PerceptualBloomProcessor extends AudioWorkletProcessor {
     const chorusPhaseInc      = (2 * Math.PI * p.chorusRate) / sampleRate;
     const cLen                = this._chorusBufL.length;
 
+    // Reverb comb-filter feedback: 0.5 is the minimum (small room) and
+    // 0.48 is the range, giving 0.98 at reverbSize = 1 (infinite space).
     const combFeedback = 0.5 + 0.48 * p.reverbSize;
     const combDamp     = p.reverbDamp * 0.4;
 

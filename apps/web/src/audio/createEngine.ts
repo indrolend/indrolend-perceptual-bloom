@@ -105,6 +105,9 @@ function encodeWav(buffer: AudioBuffer): Blob {
 // Engine factory
 // ---------------------------------------------------------------------------
 
+// Extra seconds rendered after the audio ends to capture reverb/echo tails.
+const EXPORT_TAIL_SECONDS = 3;
+
 const DEFAULT_ENGINE_PARAMS: EngineParams = {
   // Bloom
   punch: 0.7,
@@ -229,10 +232,9 @@ export async function createEngine(): Promise<BloomEngine> {
       if (!loadedBuffer) return;
 
       // Add tail time so reverb/echo tails are captured in the export.
-      const tailSeconds = 3;
       const offlineCtx  = new OfflineAudioContext(
         2,
-        Math.ceil((loadedBuffer.duration + tailSeconds) * loadedBuffer.sampleRate),
+        Math.ceil((loadedBuffer.duration + EXPORT_TAIL_SECONDS) * loadedBuffer.sampleRate),
         loadedBuffer.sampleRate,
       );
 
@@ -262,9 +264,10 @@ export async function createEngine(): Promise<BloomEngine> {
       const rendered = await offlineCtx.startRendering();
       const wav      = encodeWav(rendered);
       const url      = URL.createObjectURL(wav);
+      const ts       = new Date().toISOString().replace(/[:.]/g, "-").slice(0, 19);
       const a        = document.createElement("a");
       a.href         = url;
-      a.download     = "perceptual-bloom-export.wav";
+      a.download     = `perceptual-bloom-export-${ts}.wav`;
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
