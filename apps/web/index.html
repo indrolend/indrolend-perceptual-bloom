@@ -10,7 +10,7 @@
     <div id="app">
       <header>
         <h1>Perceptual Bloom</h1>
-        <p class="subtitle">Real-time stereo DSP: punch + bloom + tail shaping</p>
+        <p class="subtitle">Real-time stereo DSP: punch + bloom + compressor + echo + chorus + reverb</p>
       </header>
 
       <!-- ── File loader ───────────────────────────────────────────── -->
@@ -38,10 +38,55 @@
         </div>
       </section>
 
-      <!-- ── DSP Parameters ────────────────────────────────────────── -->
+      <!-- ── Bloom DSP Parameters ───────────────────────────────────── -->
       <section class="card" id="section-params">
-        <h2>DSP Parameters</h2>
-        <div id="controls-container"></div>
+        <h2>Bloom DSP</h2>
+        <div id="bloom-controls"></div>
+      </section>
+
+      <!-- ── Compressor ────────────────────────────────────────────── -->
+      <section class="card" id="section-compressor">
+        <h2>Compressor</h2>
+        <p class="section-hint">Set Ratio &gt; 1:1 to enable. Threshold sets the activation level.</p>
+        <div id="compressor-controls"></div>
+      </section>
+
+      <!-- ── Echo / Delay ──────────────────────────────────────────── -->
+      <section class="card" id="section-echo">
+        <h2>Echo / Delay</h2>
+        <p class="section-hint">Echo Mix &gt; 0% to enable. Repeats controls feedback length.</p>
+        <div id="echo-controls"></div>
+      </section>
+
+      <!-- ── Chorus ────────────────────────────────────────────────── -->
+      <section class="card" id="section-chorus">
+        <h2>Chorus</h2>
+        <p class="section-hint">Chorus Mix &gt; 0% to enable.</p>
+        <div id="chorus-controls"></div>
+      </section>
+
+      <!-- ── Sample-Rate Degradation ───────────────────────────────── -->
+      <section class="card" id="section-srate">
+        <h2>Sample Degradation</h2>
+        <p class="section-hint">Divide &gt; ÷1 for lo-fi / bit-crusher effect.</p>
+        <div id="srate-controls"></div>
+      </section>
+
+      <!-- ── Reverb ────────────────────────────────────────────────── -->
+      <section class="card" id="section-reverb">
+        <h2>Reverb</h2>
+        <p class="section-hint">Reverb Mix &gt; 0% to enable. Uses a Freeverb-style algorithm.</p>
+        <div id="reverb-controls"></div>
+      </section>
+
+      <!-- ── Master ────────────────────────────────────────────────── -->
+      <section class="card" id="section-master">
+        <h2>Master</h2>
+        <div id="master-controls"></div>
+        <div class="export-row">
+          <button id="btn-export" disabled>⬇ Export WAV</button>
+          <span class="export-hint">Offline render with all effects (+ 3 s tail)</span>
+        </div>
       </section>
 
       <!-- ── Status ────────────────────────────────────────────────── -->
@@ -53,3 +98,4 @@
     <script type="module" src="/src/main.ts"></script>
   </body>
 </html>
+

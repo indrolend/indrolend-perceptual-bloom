@@ -7,14 +7,14 @@
  * error on Cloudflare Pages that occurred when the previous `?raw` Blob
  * technique served the raw TypeScript source text instead of compiled JS.
  *
- * In dev mode Vite's worker pipeline handles the TypeScript transform on the
- * fly; in production the compiled JS asset URL is baked in at build time.
+ * Accepts `BaseAudioContext` so it can be called for both the live
+ * `AudioContext` and an `OfflineAudioContext` used during export rendering.
  */
 
 // `?worker&url` tells Vite to compile the TypeScript file as a worker bundle
 // and return the URL of the resulting JS asset.
 import workletUrl from "./processor.ts?worker&url";
 
-export async function registerWorklet(ctx: AudioContext): Promise<void> {
+export async function registerWorklet(ctx: BaseAudioContext): Promise<void> {
   await ctx.audioWorklet.addModule(workletUrl);
 }

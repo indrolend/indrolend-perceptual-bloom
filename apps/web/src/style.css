@@ -64,6 +64,13 @@ header .subtitle {
   margin-bottom: 12px;
 }
 
+.section-hint {
+  font-size: 11px;
+  color: var(--muted);
+  margin-bottom: 12px;
+  font-style: italic;
+}
+
 /* ─── File input ─────────────────────────────────────────────────────────── */
 .file-label {
   display: inline-block;
@@ -132,7 +139,13 @@ button:disabled { opacity: 0.4; cursor: not-allowed; }
 }
 
 /* ─── Controls ───────────────────────────────────────────────────────────── */
-#controls-container {
+#bloom-controls,
+#compressor-controls,
+#echo-controls,
+#chorus-controls,
+#srate-controls,
+#reverb-controls,
+#master-controls {
   display: flex;
   flex-direction: column;
   gap: 14px;
@@ -140,7 +153,7 @@ button:disabled { opacity: 0.4; cursor: not-allowed; }
 
 .control-row {
   display: grid;
-  grid-template-columns: 160px 1fr 64px;
+  grid-template-columns: 160px 1fr 72px;
   align-items: center;
   gap: 12px;
 }
@@ -185,6 +198,29 @@ input[type="range"]:hover::-webkit-slider-thumb { background: var(--accent2); }
   font-weight: 600;
 }
 
+/* ─── Export row ─────────────────────────────────────────────────────────── */
+.export-row {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-top: 14px;
+  padding-top: 14px;
+  border-top: 1px solid var(--border);
+}
+
+.export-hint {
+  font-size: 11px;
+  color: var(--muted);
+  font-style: italic;
+}
+
+#btn-export {
+  background: var(--accent);
+  color: #fff;
+  white-space: nowrap;
+}
+#btn-export:hover:not(:disabled) { background: var(--accent2); color: #0f1117; }
+
 /* ─── Footer / status ────────────────────────────────────────────────────── */
 footer {
   color: var(--muted);
@@ -195,3 +231,4 @@ footer {
 
 #status { transition: color 0.3s; }
 #status.error { color: var(--danger); }
+
