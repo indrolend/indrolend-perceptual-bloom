@@ -10,7 +10,13 @@ import "./style.css";
 import { createEngine, type BloomEngine } from "./audio/createEngine.js";
 import {
   addControl,
-  CONTROL_DEFS,
+  BLOOM_DEFS,
+  COMPRESSOR_DEFS,
+  ECHO_DEFS,
+  CHORUS_DEFS,
+  SRATE_DEFS,
+  REVERB_DEFS,
+  MASTER_DEFS,
   PRESETS,
   type ControlHandle,
 } from "./ui/controls.js";
@@ -18,14 +24,22 @@ import {
 // ---------------------------------------------------------------------------
 // DOM refs
 // ---------------------------------------------------------------------------
-const fileInput = document.getElementById("file-input") as HTMLInputElement;
-const fileNameEl = document.getElementById("file-name") as HTMLParagraphElement;
-const btnPlay = document.getElementById("btn-play") as HTMLButtonElement;
-const btnStop = document.getElementById("btn-stop") as HTMLButtonElement;
-const chkLoop = document.getElementById("chk-loop") as HTMLInputElement;
-const chkBypass = document.getElementById("chk-bypass") as HTMLInputElement;
-const controlsContainer = document.getElementById("controls-container") as HTMLDivElement;
-const statusEl = document.getElementById("status") as HTMLParagraphElement;
+const fileInput     = document.getElementById("file-input")     as HTMLInputElement;
+const fileNameEl    = document.getElementById("file-name")      as HTMLParagraphElement;
+const btnPlay       = document.getElementById("btn-play")       as HTMLButtonElement;
+const btnStop       = document.getElementById("btn-stop")       as HTMLButtonElement;
+const btnExport     = document.getElementById("btn-export")     as HTMLButtonElement;
+const chkLoop       = document.getElementById("chk-loop")       as HTMLInputElement;
+const chkBypass     = document.getElementById("chk-bypass")     as HTMLInputElement;
+const statusEl      = document.getElementById("status")         as HTMLParagraphElement;
+
+const bloomContainer      = document.getElementById("bloom-controls")      as HTMLDivElement;
+const compressorContainer = document.getElementById("compressor-controls") as HTMLDivElement;
+const echoContainer       = document.getElementById("echo-controls")       as HTMLDivElement;
+const chorusContainer     = document.getElementById("chorus-controls")     as HTMLDivElement;
+const srateContainer      = document.getElementById("srate-controls")      as HTMLDivElement;
+const reverbContainer     = document.getElementById("reverb-controls")     as HTMLDivElement;
+const masterContainer     = document.getElementById("master-controls")     as HTMLDivElement;
 
 // ---------------------------------------------------------------------------
 // State
@@ -56,18 +70,31 @@ async function getEngine(): Promise<BloomEngine> {
 }
 
 // ---------------------------------------------------------------------------
-// Build controls
+// Build controls — one section at a time
 // ---------------------------------------------------------------------------
 const controlHandles: Map<string, ControlHandle> = new Map();
 
-for (const def of CONTROL_DEFS) {
-  const handle = addControl(controlsContainer, def, (value) => {
-    engine?.setParams({ [def.id]: value } as never);
-  });
-  controlHandles.set(def.id, handle);
+function buildSection(
+  container: HTMLElement,
+  defs: typeof BLOOM_DEFS,
+): void {
+  for (const def of defs) {
+    const handle = addControl(container, def, (value) => {
+      engine?.setParams({ [def.id]: value } as never);
+    });
+    controlHandles.set(def.id, handle);
+  }
 }
 
-// Preset buttons row
+buildSection(bloomContainer,      BLOOM_DEFS);
+buildSection(compressorContainer,  COMPRESSOR_DEFS);
+buildSection(echoContainer,        ECHO_DEFS);
+buildSection(chorusContainer,      CHORUS_DEFS);
+buildSection(srateContainer,       SRATE_DEFS);
+buildSection(reverbContainer,      REVERB_DEFS);
+buildSection(masterContainer,      MASTER_DEFS);
+
+// Preset buttons — appended to the Bloom section
 const presetRow = document.createElement("div");
 presetRow.style.cssText =
   "display:flex;gap:8px;flex-wrap:wrap;margin-top:8px;padding-top:12px;border-top:1px solid var(--border)";
@@ -80,7 +107,7 @@ for (const preset of PRESETS) {
   btn.addEventListener("click", () => applyPreset(preset.values));
   presetRow.appendChild(btn);
 }
-controlsContainer.appendChild(presetRow);
+bloomContainer.appendChild(presetRow);
 
 function applyPreset(values: Record<string, number>): void {
   for (const [id, value] of Object.entries(values)) {
@@ -106,9 +133,13 @@ fileInput.addEventListener("change", async () => {
     const audioBuffer = await eng.context.decodeAudioData(arrayBuffer);
     eng.loadBuffer(audioBuffer);
 
-    btnPlay.disabled = false;
-    btnStop.disabled = false;
-    setStatus(`Loaded "${file.name}" (${audioBuffer.duration.toFixed(2)}s, ${audioBuffer.numberOfChannels}ch, ${audioBuffer.sampleRate}Hz)`);
+    btnPlay.disabled   = false;
+    btnStop.disabled   = false;
+    btnExport.disabled = false;
+    setStatus(
+      `Loaded "${file.name}" (${audioBuffer.duration.toFixed(2)}s, ` +
+      `${audioBuffer.numberOfChannels}ch, ${audioBuffer.sampleRate}Hz)`,
+    );
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);
     setStatus(`Failed to load file: ${msg}`, true);
@@ -154,3 +185,22 @@ chkBypass.addEventListener("change", () => {
   engine?.setBypass(bypass);
   setStatus(bypass ? "Bypass ON (dry signal)" : "Bypass OFF (effect active)");
 });
+
+// ---------------------------------------------------------------------------
+// Export
+// ---------------------------------------------------------------------------
+btnExport.addEventListener("click", async () => {
+  if (!engine) return;
+  btnExport.disabled = true;
+  setStatus("Rendering export — please wait…");
+  try {
+    await engine.exportAudio();
+    setStatus("Export complete — check your downloads.");
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err);
+    setStatus(`Export error: ${msg}`, true);
+  } finally {
+    btnExport.disabled = false;
+  }
+});
+

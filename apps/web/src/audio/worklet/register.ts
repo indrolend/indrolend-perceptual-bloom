@@ -1,22 +1,20 @@
 /**
  * Register the Perceptual Bloom AudioWorklet module with an AudioContext.
  *
- * Uses Vite's `?raw` import to inline the worklet source as a string, then
- * wraps it in a Blob URL so the browser always receives the correct
- * `application/javascript` MIME type — regardless of build tooling or
- * Cloudflare Pages CDN configuration.
+ * Uses Vite's `?worker&url` query so the processor TypeScript is compiled to
+ * JavaScript at build time and emitted as a dedicated asset.  The browser
+ * therefore always receives valid JS — fixing the "Unexpected token 'const'"
+ * error on Cloudflare Pages that occurred when the previous `?raw` Blob
+ * technique served the raw TypeScript source text instead of compiled JS.
+ *
+ * Accepts `BaseAudioContext` so it can be called for both the live
+ * `AudioContext` and an `OfflineAudioContext` used during export rendering.
  */
 
-// Vite transforms `?raw` imports to the transpiled JS source string at
-// build time, so this works correctly in both dev and production.
-import processorSrc from "./processor.ts?raw";
+// `?worker&url` tells Vite to compile the TypeScript file as a worker bundle
+// and return the URL of the resulting JS asset.
+import workletUrl from "./processor.ts?worker&url";
 
-export async function registerWorklet(ctx: AudioContext): Promise<void> {
-  const blob = new Blob([processorSrc], { type: "application/javascript" });
-  const url = URL.createObjectURL(blob);
-  try {
-    await ctx.audioWorklet.addModule(url);
-  } finally {
-    URL.revokeObjectURL(url);
-  }
+export async function registerWorklet(ctx: BaseAudioContext): Promise<void> {
+  await ctx.audioWorklet.addModule(workletUrl);
 }

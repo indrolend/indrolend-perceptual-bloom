@@ -47,6 +47,19 @@ pnpm -C apps/web preview
 
 ---
 
+## AudioWorklet loading
+
+The AudioWorklet processor (`apps/web/src/audio/worklet/processor.ts`) is loaded using Vite's **`?worker&url`** import query:
+
+```typescript
+import workletUrl from "./processor.ts?worker&url";
+await ctx.audioWorklet.addModule(workletUrl);
+```
+
+This forces Vite to compile the TypeScript file to JavaScript at build time and emit it as a dedicated asset.  The alternative (`?raw` + Blob URL) passes the raw TypeScript source to `addModule()`, which makes the browser throw *"Unexpected token 'const'"* on Cloudflare Pages and any CDN that serves the raw file without a TypeScript-aware build step.
+
+---
+
 ## Cloudflare Pages deployment
 
 1. Push this repository to GitHub (or fork it).
